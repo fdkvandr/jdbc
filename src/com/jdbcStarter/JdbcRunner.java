@@ -2,10 +2,9 @@ package com.jdbcStarter;
 
 
 import com.jdbcStarter.util.ConnectionManager;
-import org.postgresql.Driver;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -14,27 +13,22 @@ public class JdbcRunner {
     public static void main(String[] args) throws SQLException {
 
         String sql1 = """
-                CREATE TABLE IF NOT EXISTS info(
-                    id SERIAL PRIMARY KEY,
-                    data TEXT NOT NULL
-                );
+                SELECT *
+                FROM ticket;
                 """;
 
-        String sql2 = """
-                INSERT INTO info (data)
-                VALUES ('Test1'), ('Test2'), ('Test3'), ('Test4');
-                """;
+        try (Connection connection = ConnectionManager.open();
+             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)) {//Обернуто в try with resources.
 
-        try (Connection connection = ConnectionManager.open()) { //Используем метод open() который мы создали для создания connection.
-
-            Statement statement = connection.createStatement(); //У Сonnection вызываем метод createStatement() который возвращает объект Statement.
-            boolean executeResult1 = statement.execute(sql1); //Вернул false.
-            boolean executeResult2 = statement.execute(sql2); //Вернул false.
-            System.out.println(statement.getUpdateCount()); //Вернул 4.
-
-            int executeResult3 = statement.executeUpdate(sql2); //Вернул 4.
-
-
+            ResultSet executeResult = statement.executeQuery(sql1); //ResultSet можно не оборачивать в try with resources, т.к. закроетса автоматически сразу как закроется statement.
+            while (executeResult.next()) {
+                System.out.println(executeResult.getLong("id"));
+                System.out.println(executeResult.getString("passenger_no"));
+                System.out.println(executeResult.getBigDecimal("cost")); //BigDecimal - более точный чем Double, он безграничный и не откидывает вещественную часть.
+                executeResult.first(); //last(), beforeFirst(), afterLast(), isLast(), isFirst().
+                executeResult.updateLong("id", 1000); //Обновляет текущую строку по которой итерируемся.
+                System.out.println("--------");
+            }
         }
     }
 }

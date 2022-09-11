@@ -3,38 +3,37 @@ package com.jdbcStarter;
 
 import com.jdbcStarter.util.ConnectionManager;
 
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class JdbcRunner {
 
     public static void main(String[] args) throws SQLException {
-        Long fligthId = 2L; //без L будет int.
-        List<Long> result = getTicketsByFlighId(fligthId);
-        System.out.println(result);
+        checkMetaData();
     }
 
-    private static List<Long> getTicketsByFlighId(Long flightId) throws SQLException {
-        String sql = """
-                SELECT id 
-                FROM ticket
-                WHERE flight_id = ?;
-                """; // ? обозначает, что сюда будет вставлен изменяемый параметр.
+    private static void checkMetaData() throws SQLException {
+        try (Connection connection = ConnectionManager.open()) {
+            DatabaseMetaData metaData = connection.getMetaData();
+            ResultSet catalogs = metaData.getCatalogs(); //Получить базы данных
+            while (catalogs.next()) {
+                String catalog = catalogs.getString("TABLE_CAT");
 
-        List<Long> result = new ArrayList<>();
-        try (Connection connection = ConnectionManager.open();
-            PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-//            preparedStatement.setLong(1, flightId); // Должны установить порядковый номер и значение изменяемого параметра. Опять обращаем внимание, что работаем с примитивами, которые не знают, что такое null.
-            preparedStatement.setObject(1, flightId, java.sql.Types.BIGINT); //NULL SAFE.
-            ResultSet resultSet = preparedStatement.executeQuery(); // ничего не вставляем
-            while (resultSet.next()) {
-                result.add(resultSet.getObject("id", Long.class)); // NULL SAFE. Если наша колонка может иметь null значения, то, поскольку
-                                                                             // методы типа getLong возвращают примитив long, в случае с null,
-                                                                             // мы не сможем его привести к примитивному типу, поэтому используется getObject.
+                ResultSet schemas = metaData.getSchemas();
+                while (schemas.next()) {
+                    String schema = schemas.getString("TABLE_SCHEM");
+                    if (schema.equals("public")) {
+                        ResultSet tables = metaData.getTables(catalog, schema, "%", null);
+                        while (tables.next()) {
+                            String table_name = tables.getString("TABLE_NAME");
+                            System.out.println(String.format("%s.%s.%s", catalog, schema, table_name));
+                        }
+                    }
+                }
             }
         }
-        return result;
     }
 }
 

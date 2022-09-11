@@ -29,7 +29,10 @@
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="bce846e8-a47b-41f5-afbe-f0c34f9a17be">
-      <console name="flight_repository" type="STANDARD" schema="information_schema" session="Main" />
+      <console name="flight_repository" type="STANDARD" schema="public" session="Main"><![CDATA[create table info (
+    id serial primary key,
+    data varchar(30)
+)]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">

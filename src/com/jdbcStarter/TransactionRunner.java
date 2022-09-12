@@ -5,35 +5,27 @@ import com.jdbcStarter.util.ConnectionManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class TransactionRunner {
 
     public static void main(String[] args) throws SQLException {
-        long fligthId = 9;
-        String deleteFlightSql = "DELETE FROM flight WHERE id = ?;";
-
-        String deleteTicketsSql = "DELETE FROM ticket WHERE flight_id = ?;";
+        long fligthId = 8;
+        String deleteFlightSql = "DELETE FROM flight WHERE id = " + fligthId + ';';
+        String deleteTicketsSql = "DELETE FROM ticket WHERE flight_id = " + fligthId + ';';
 
         Connection connection = null; // мы должны вынести объ€вление соединени€, чтобы потом обращатьс€ к ним дл€ выполнени€ метода rollback
-        PreparedStatement deleteFlightStatement = null; // мы должны вынести объ€вление statement`ов, чтобы потом обращатьс€ к ним дл€ выполнени€ метода rollback
-        PreparedStatement deleteTicketsStatement = null; // мы должны вынести объ€вление statement`ов, чтобы потом обращатьс€ к ним дл€ выполнени€ метода rollback
-
+        Statement statement = null;
         // “пеерь мы не можем использовать try with resources и поэтому нам придетс€ самим их закрывать. »спользуем просто блок try catch
         try {
             connection = ConnectionManager.open(); // инициализируем теперь тут
-            deleteFlightStatement = connection.prepareStatement(deleteFlightSql); // инициализируем теперь тут
-            deleteTicketsStatement = connection.prepareStatement(deleteTicketsSql); // инициализируем теперь тут
-
             connection.setAutoCommit(false); // ”бираем автокоммит
 
-            deleteTicketsStatement.setLong(1, fligthId);
-            deleteFlightStatement.setLong(1, fligthId);
+            statement = connection.createStatement();
+            statement.addBatch(deleteTicketsSql);
+            statement.addBatch(deleteFlightSql);
 
-            deleteTicketsStatement.executeUpdate();
-            if (true) {
-                throw new RuntimeException("Oooops");
-            }
-            deleteFlightStatement.executeUpdate();
+            int[] ints = statement.executeBatch();
 
             connection.commit(); // —охран€ем сразу все наши изменени€. ≈сли будет включен автокоммит, то вызвав этот метод проихойдет исключение
         } catch (Exception e) {
@@ -45,11 +37,8 @@ public class TransactionRunner {
             if (connection != null) {
                 connection.close();
             }
-            if (deleteFlightStatement != null) {
-                deleteFlightStatement.close();
-            }
-            if (deleteTicketsStatement != null) {
-                deleteTicketsStatement.close();
+            if (statement != null) {
+                statement.close();
             }
         }
     }

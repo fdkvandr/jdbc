@@ -35,9 +35,9 @@
 )
 
 select * from ticket
-where flight_id = 9;
+where flight_id = 8;
 
-select * from flight where id = 9;]]></console>
+select * from flight where id = 8;]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">

@@ -32,7 +32,12 @@
       <console name="flight_repository" type="STANDARD" schema="public" session="Main"><![CDATA[create table info (
     id serial primary key,
     data varchar(30)
-)]]></console>
+)
+
+select * from ticket
+where flight_id = 9;
+
+select * from flight where id = 9;]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">

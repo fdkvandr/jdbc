@@ -37,7 +37,12 @@
 select * from ticket
 where flight_id = 8;
 
-select * from flight where id = 8;]]></console>
+select * from flight where id = 8;
+
+alter table aircraft
+add image bytea;
+
+select * from aircraft]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
@@ -94,7 +99,7 @@ select * from flight where id = 8;]]></console>
           <deprecated-pwd value="cG9zdGdyZXM=" />
         </database>
         <properties>
-          <auto-commit value="false" />
+          <auto-commit value="true" />
         </properties>
         <ssh-settings>
           <active value="false" />

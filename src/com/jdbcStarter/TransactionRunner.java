@@ -1,9 +1,8 @@
 package com.jdbcStarter;
 
-import com.jdbcStarter.util.ConnectionManager;
+import com.jdbcStarter.util.ConnectionPool;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -18,7 +17,7 @@ public class TransactionRunner {
         Statement statement = null;
         // Тпеерь мы не можем использовать try with resources и поэтому нам придется самим их закрывать. Используем просто блок try catch
         try {
-            connection = ConnectionManager.open(); // инициализируем теперь тут
+            connection = ConnectionPool.get(); // инициализируем теперь тут
             connection.setAutoCommit(false); // Убираем автокоммит
 
             statement = connection.createStatement();
@@ -41,5 +40,32 @@ public class TransactionRunner {
                 statement.close();
             }
         }
+
+        try {
+            connection = ConnectionPool.get(); // инициализируем теперь тут
+            connection.setAutoCommit(false); // Убираем автокоммит
+
+            statement = connection.createStatement();
+            statement.addBatch(deleteTicketsSql);
+            statement.addBatch(deleteFlightSql);
+
+            int[] ints = statement.executeBatch();
+
+            connection.commit(); // Сохраняем сразу все наши изменения. Если будет включен автокоммит, то вызвав этот метод проихойдет исключение
+        } catch (Exception e) {
+            if (connection != null) { // Если произойдет ошибка при инициализации connection`a то он будет null и мы не сможем к нему обращаться
+                connection.rollback();
+            }
+            throw e;
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+            if (statement != null) {
+                statement.close();
+            }
+        }
+
+
     }
 }

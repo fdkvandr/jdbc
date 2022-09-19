@@ -2,6 +2,7 @@ package com.jdbcStarter;
 
 
 import com.jdbcStarter.util.ConnectionManager;
+import com.jdbcStarter.util.ConnectionPool;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -11,11 +12,15 @@ import java.sql.SQLException;
 public class JdbcRunner {
 
     public static void main(String[] args) throws SQLException {
-        checkMetaData();
+        try {
+            checkMetaData();
+        } finally {
+            ConnectionPool.closePool();
+        }
     }
 
     private static void checkMetaData() throws SQLException {
-        try (Connection connection = ConnectionManager.open()) {
+        try (Connection connection = ConnectionPool.get()) {
             DatabaseMetaData metaData = connection.getMetaData();
             ResultSet catalogs = metaData.getCatalogs(); //Получить базы данных
             while (catalogs.next()) {

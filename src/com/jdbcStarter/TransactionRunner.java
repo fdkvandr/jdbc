@@ -40,32 +40,5 @@ public class TransactionRunner {
                 statement.close();
             }
         }
-
-        try {
-            connection = ConnectionPool.get(); // инициализируем теперь тут
-            connection.setAutoCommit(false); // Убираем автокоммит
-
-            statement = connection.createStatement();
-            statement.addBatch(deleteTicketsSql);
-            statement.addBatch(deleteFlightSql);
-
-            int[] ints = statement.executeBatch();
-
-            connection.commit(); // Сохраняем сразу все наши изменения. Если будет включен автокоммит, то вызвав этот метод проихойдет исключение
-        } catch (Exception e) {
-            if (connection != null) { // Если произойдет ошибка при инициализации connection`a то он будет null и мы не сможем к нему обращаться
-                connection.rollback();
-            }
-            throw e;
-        } finally {
-            if (connection != null) {
-                connection.close();
-            }
-            if (statement != null) {
-                statement.close();
-            }
-        }
-
-
     }
 }

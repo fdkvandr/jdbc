@@ -42,7 +42,9 @@ select * from flight where id = 8;
 alter table aircraft
 add image bytea;
 
-select * from aircraft]]></console>
+select * from aircraft
+
+select * from ticket where id =276;]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">

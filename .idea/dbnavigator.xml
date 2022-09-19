@@ -44,7 +44,7 @@ add image bytea;
 
 select * from aircraft
 
-select * from ticket where id =276;]]></console>
+select * from ticket]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">

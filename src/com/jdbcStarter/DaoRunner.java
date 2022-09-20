@@ -1,6 +1,7 @@
 package com.jdbcStarter;
 
 import com.jdbcStarter.dao.TicketDao;
+import com.jdbcStarter.dto.TicketFilter;
 import com.jdbcStarter.entity.TicketEntity;
 
 import java.math.BigDecimal;
@@ -10,11 +11,17 @@ import java.util.Optional;
 public class DaoRunner {
 
     public static void main(String[] args) {
+        TicketFilter ticketFilter = new TicketFilter(3,0, "Екатерина Петренко", "A1");
+        List<TicketEntity> ticketEntities = TicketDao.getInstance().findAll(ticketFilter);
+        System.out.println(ticketEntities);
+    }
+
+    public static void findAllTest() {
         List<TicketEntity> ticketEntitys = TicketDao.getInstance().findAll();
         System.out.println(ticketEntitys);
     }
 
-    private static void updateTest() {
+    public static void updateTest() {
         TicketDao ticketDao = TicketDao.getInstance();
         Optional<TicketEntity> maybeTicket = findByIdTest(221L);
 

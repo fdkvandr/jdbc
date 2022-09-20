@@ -1,5 +1,6 @@
 package com.jdbcStarter.dao;
 
+import com.jdbcStarter.dto.TicketFilter;
 import com.jdbcStarter.entity.TicketEntity;
 import com.jdbcStarter.exception.DaoExcaption;
 import com.jdbcStarter.util.ConnectionPool;
@@ -8,17 +9,20 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.joining;
 
 public class TicketDao { // Не стоит создавать final класс потому что в разлиных фреймворках, как Hibernate и Spring очень часто создают Proxy на наши классы, следовательно не стоит этого делать
 
     private static final TicketDao INSTANCE = new TicketDao(); //Реализовываем single tone. Т.е. создаем сразу объект и делаем private конструктор, чтобы никто другой не смог создать этот объект. Таким образом, он будет единственным
     private static final String DELETE_SQL = """
             DELETE FROM ticket
-            WHERE id = ?;
+            WHERE id = ?
             """;
     private static final String SAVE_SQL = """
             INSERT INTO ticket (passenger_no, passenger_name, flight_id, seat_no, cost)
-            VALUES (?, ?, ?, ?, ?);
+            VALUES (?, ?, ?, ?, ?)
             """;
     private static final String UPDATE_SQL = """
             UPDATE ticket
@@ -27,14 +31,14 @@ public class TicketDao { // Не стоит создавать final класс потому что в разлиных
                 flight_id = ?,
                 seat_no = ?,
                 cost = ?
-            WHERE id = ?;
+            WHERE id = ?
             """;
     public static final String FIND_ALL_SQL = """
             SELECT id, passenger_no, passenger_name, flight_id, seat_no, cost
             FROM ticket
             """;
     private static final String FIND_BY_ID_SQL = FIND_ALL_SQL + """
-            WHERE id = ?;
+            WHERE id = ?
             """;
 
     private TicketDao() {
@@ -123,6 +127,44 @@ public class TicketDao { // Не стоит создавать final класс потому что в разлиных
             }
 
             return Optional.ofNullable(ticketEntity);
+        } catch (SQLException e) {
+            throw new DaoExcaption(e);
+        }
+    }
+
+    public List<TicketEntity> findAll(TicketFilter filter) {
+        List<Object> parameters = new ArrayList<>(); //Тут будут параметры для нашего запроса (на место '?')
+        List<String> whereSQL = new ArrayList<>(); //Здесь будут параметры для запросов WHERE, LIKE
+        if (filter.seatNo() != null) { // Если мы хотим добавлять параметры, которые могут быть null
+            whereSQL.add("seat_no LIKE ?");
+            parameters.add("%" + filter.seatNo() + "%"); // "%" ставятся для фильтра LIKE. Для полного соответсвия их не указывают
+        }
+        if (filter.passengerName() != null) {
+            whereSQL.add("passenger_name = ?");
+            parameters.add(filter.passengerName());
+        }
+        parameters.add(filter.limit()); //Поскольку мы создавали класс record, то getter выглядит просто как название полей.
+        parameters.add(filter.offset());
+
+        String where = ""; //Чтобы если все параметры будут null, добавить пустую строку.
+        where = where + (whereSQL.isEmpty() ? "" : " WHERE ") + whereSQL.stream().collect(joining(" AND ", "", "LIMIT ? OFFSET ?"));
+
+        String sql = FIND_ALL_SQL + where;
+
+        try (Connection connection = ConnectionPool.get();
+        PreparedStatement preparedStatement = connection.prepareStatement(sql)) { //SQL условие у нас будет динамическим. Он будет выглядить как FIND_ALL_SQL, но к нему будет добавляться различные условия WHERE. Поэтому SQL будет формироваться во время выполнения метода findAll()
+            for (int i = 0; i < parameters.size(); i++) {
+                preparedStatement.setObject(i+1, parameters.get(i)); // И заполняем из нашего массива параметры. Лучше всего как раз использовать ArrayList, потому что у него есть доступ по индексу.
+            }
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            List<TicketEntity> ticketEntities = new ArrayList<>();
+            while (resultSet.next()) {
+                ticketEntities.add(buildTicket(resultSet));
+            }
+
+            return ticketEntities;
         } catch (SQLException e) {
             throw new DaoExcaption(e);
         }

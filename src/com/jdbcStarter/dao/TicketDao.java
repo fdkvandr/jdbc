@@ -13,7 +13,7 @@ import java.util.Optional;
 
 import static java.util.stream.Collectors.joining;
 
-public class TicketDao { // Не стоит создавать final класс потому что в разлиных фреймворках, как Hibernate и Spring очень часто создают Proxy на наши классы, следовательно не стоит этого делать
+public class TicketDao implements Dao<Long, TicketEntity>{ // Не стоит создавать final класс потому что в разлиных фреймворках, как Hibernate и Spring очень часто создают Proxy на наши классы, следовательно не стоит этого делать
 
     public static final String FIND_ALL_SQL = """
             SELECT t.id, t.passenger_no, t.passenger_name, t.flight_id, t.seat_no, t.cost,

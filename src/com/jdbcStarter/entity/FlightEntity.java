@@ -10,5 +10,4 @@ public record FlightEntity(Long id,
                            String arrivalAirportCode,
                            Integer aircraftId,
                            String status) {
-
 }

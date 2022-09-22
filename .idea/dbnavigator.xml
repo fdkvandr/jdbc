@@ -44,7 +44,14 @@ add image bytea;
 
 select * from aircraft
 
-select * from ticket]]></console>
+select * from ticket 
+
+SELECT t.id, t.passenger_no, t.passenger_name, t.flight_id, t.seat_no, t.cost,
+    f.status, f.aircraft_id, f.arrival_airport_code, f.arrival_date, f.departure_airport_code, f.departure_date
+FROM ticket t
+JOIN flight f
+    ON t.flight_id = f.id
+WHERE t.id = 5]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">

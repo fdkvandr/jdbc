@@ -16,12 +16,9 @@ import static java.util.stream.Collectors.joining;
 public class TicketDao implements Dao<Long, TicketEntity>{ // Не стоит создавать final класс потому что в разлиных фреймворках, как Hibernate и Spring очень часто создают Proxy на наши классы, следовательно не стоит этого делать
 
     public static final String FIND_ALL_SQL = """
-            SELECT t.id, t.passenger_no, t.passenger_name, t.flight_id, t.seat_no, t.cost,
-                f.status, f.aircraft_id, f.arrival_airport_code, f.arrival_date, f.departure_airport_code, f.departure_date, f.flight_no
-            FROM ticket t
-            JOIN flight f
-                ON t.flight_id = f.id
-            """; // Делаем JOIN чтобы присоединить еще сущность flightEntity, тобы потом создать объект flightEntity и присвоить ссылку на этот объект в объекте ticketEntity
+            SELECT id, passenger_no, passenger_name, flight_id, seat_no, cost
+            FROM ticket
+            """;
     private static final TicketDao INSTANCE = new TicketDao(); //Реализовываем single tone. Т.е. создаем сразу объект и делаем private конструктор, чтобы никто другой не смог создать этот объект. Таким образом, он будет единственным
     private static final String DELETE_SQL = """
             DELETE FROM ticket
@@ -41,8 +38,10 @@ public class TicketDao implements Dao<Long, TicketEntity>{ // Не стоит создавать
             WHERE id = ?
             """;
     private static final String FIND_BY_ID_SQL = FIND_ALL_SQL + """
-            WHERE t.id = ?
+            WHERE id = ?
             """;
+
+    FlightDao flightDao = FlightDao.getInstance(); // Создаем объект flightDao чтобы явно видеть зависимость.
 
     private TicketDao() {
     }
@@ -174,21 +173,12 @@ public class TicketDao implements Dao<Long, TicketEntity>{ // Не стоит создавать
     }
 
     private TicketEntity buildTicket(ResultSet resultSet) throws SQLException {
-        FlightEntity flightEntity = new FlightEntity( //теперь у нас в resultSet лежит все, поэтому создаем объект flightEntity
-                resultSet.getLong("flight_id"),
-                resultSet.getString("flight_no"),
-                resultSet.getTimestamp("departure_date").toLocalDateTime(),
-                resultSet.getString("departure_airport_code"),
-                resultSet.getTimestamp("arrival_date").toLocalDateTime(),
-                resultSet.getString("arrival_airport_code"),
-                resultSet.getInt("aircraft_id"),
-                resultSet.getString("status")
-        );
         return new TicketEntity(
                 resultSet.getLong("id"),
                 resultSet.getString("passenger_no"),
                 resultSet.getString("passenger_name"),
-                flightEntity, // Вставляем ссылку на наш только что созданный объект
+                flightDao.findById(resultSet.getLong("flight_id"),
+                        resultSet.getStatement().getConnection()).orElse(null), //Каждый resultSet знает о prepareStatement, который его открыл, а он знает о соединении, который его создал. Таким образом мы можем получить доступ к connection из нашего resultSet. Вставляем ссылку на наш только что созданный объект. Поскольку он у нас Optional, то пишем orElse(null)
                 resultSet.getString("seat_no"),
                 resultSet.getBigDecimal("cost")
         );

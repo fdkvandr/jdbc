@@ -1,6 +1,7 @@
 package com.jdbcStarter.dao;
 
 import com.jdbcStarter.dto.TicketFilter;
+import com.jdbcStarter.entity.FlightEntity;
 import com.jdbcStarter.entity.TicketEntity;
 import com.jdbcStarter.exception.DaoExcaption;
 import com.jdbcStarter.util.ConnectionPool;
@@ -9,12 +10,18 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 
 public class TicketDao { // Не стоит создавать final класс потому что в разлиных фреймворках, как Hibernate и Spring очень часто создают Proxy на наши классы, следовательно не стоит этого делать
 
+    public static final String FIND_ALL_SQL = """
+            SELECT t.id, t.passenger_no, t.passenger_name, t.flight_id, t.seat_no, t.cost,
+                f.status, f.aircraft_id, f.arrival_airport_code, f.arrival_date, f.departure_airport_code, f.departure_date, f.flight_no
+            FROM ticket t
+            JOIN flight f
+                ON t.flight_id = f.id
+            """; // Делаем JOIN чтобы присоединить еще сущность flightEntity, тобы потом создать объект flightEntity и присвоить ссылку на этот объект в объекте ticketEntity
     private static final TicketDao INSTANCE = new TicketDao(); //Реализовываем single tone. Т.е. создаем сразу объект и делаем private конструктор, чтобы никто другой не смог создать этот объект. Таким образом, он будет единственным
     private static final String DELETE_SQL = """
             DELETE FROM ticket
@@ -33,12 +40,8 @@ public class TicketDao { // Не стоит создавать final класс потому что в разлиных
                 cost = ?
             WHERE id = ?
             """;
-    public static final String FIND_ALL_SQL = """
-            SELECT id, passenger_no, passenger_name, flight_id, seat_no, cost
-            FROM ticket
-            """;
     private static final String FIND_BY_ID_SQL = FIND_ALL_SQL + """
-            WHERE id = ?
+            WHERE t.id = ?
             """;
 
     private TicketDao() {
@@ -65,7 +68,7 @@ public class TicketDao { // Не стоит создавать final класс потому что в разлиных
              PreparedStatement preparedStatement = connection.prepareStatement(SAVE_SQL, Statement.RETURN_GENERATED_KEYS)) { //  Statement.RETURN_GENERATED_KEYS чтобы вернул ключ
             preparedStatement.setString(1, ticketEntity.getPassengerNo());
             preparedStatement.setString(2, ticketEntity.getPassengerName());
-            preparedStatement.setLong(3, ticketEntity.getFlightId()); //обращаю внимание, что при null необходимо будет делать через setObject
+            preparedStatement.setLong(3, ticketEntity.getFlightEntity().id()); // Берем id потому что это и есть flight.id = flight_id поле. Обращаю внимание, что при null необходимо будет делать через setObject
             preparedStatement.setString(4, ticketEntity.getSeatNo());
             preparedStatement.setBigDecimal(5, ticketEntity.getCost());
 
@@ -86,7 +89,7 @@ public class TicketDao { // Не стоит создавать final класс потому что в разлиных
              PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_SQL)) {
             preparedStatement.setString(1, ticketEntity.getPassengerNo());
             preparedStatement.setString(2, ticketEntity.getPassengerName());
-            preparedStatement.setLong(3, ticketEntity.getFlightId());
+            preparedStatement.setLong(3, ticketEntity.getFlightEntity().id());// Берем id потому что это и есть flight_id поле. О
             preparedStatement.setString(4, ticketEntity.getSeatNo());
             preparedStatement.setBigDecimal(5, ticketEntity.getCost());
             preparedStatement.setLong(6, ticketEntity.getId());
@@ -152,9 +155,9 @@ public class TicketDao { // Не стоит создавать final класс потому что в разлиных
         String sql = FIND_ALL_SQL + where;
 
         try (Connection connection = ConnectionPool.get();
-        PreparedStatement preparedStatement = connection.prepareStatement(sql)) { //SQL условие у нас будет динамическим. Он будет выглядить как FIND_ALL_SQL, но к нему будет добавляться различные условия WHERE. Поэтому SQL будет формироваться во время выполнения метода findAll()
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) { //SQL условие у нас будет динамическим. Он будет выглядить как FIND_ALL_SQL, но к нему будет добавляться различные условия WHERE. Поэтому SQL будет формироваться во время выполнения метода findAll()
             for (int i = 0; i < parameters.size(); i++) {
-                preparedStatement.setObject(i+1, parameters.get(i)); // И заполняем из нашего массива параметры. Лучше всего как раз использовать ArrayList, потому что у него есть доступ по индексу.
+                preparedStatement.setObject(i + 1, parameters.get(i)); // И заполняем из нашего массива параметры. Лучше всего как раз использовать ArrayList, потому что у него есть доступ по индексу.
             }
 
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -170,12 +173,22 @@ public class TicketDao { // Не стоит создавать final класс потому что в разлиных
         }
     }
 
-    private TicketEntity buildTicket(ResultSet resultSet) throws SQLException{
+    private TicketEntity buildTicket(ResultSet resultSet) throws SQLException {
+        FlightEntity flightEntity = new FlightEntity( //теперь у нас в resultSet лежит все, поэтому создаем объект flightEntity
+                resultSet.getLong("flight_id"),
+                resultSet.getString("flight_no"),
+                resultSet.getTimestamp("departure_date").toLocalDateTime(),
+                resultSet.getString("departure_airport_code"),
+                resultSet.getTimestamp("arrival_date").toLocalDateTime(),
+                resultSet.getString("arrival_airport_code"),
+                resultSet.getInt("aircraft_id"),
+                resultSet.getString("status")
+        );
         return new TicketEntity(
                 resultSet.getLong("id"),
                 resultSet.getString("passenger_no"),
                 resultSet.getString("passenger_name"),
-                resultSet.getLong("flight_id"),
+                flightEntity, // Вставляем ссылку на наш только что созданный объект
                 resultSet.getString("seat_no"),
                 resultSet.getBigDecimal("cost")
         );

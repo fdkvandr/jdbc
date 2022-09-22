@@ -7,15 +7,15 @@ public class TicketEntity {
     private Long id;
     private String passengerNo;
     private String passengerName;
-    private Long flightId;
+    private FlightEntity flightEntity; //Вместо flight_id мы ссылаемся на объект типа flight
     private String seatNo;
     private BigDecimal cost;
 
-    public TicketEntity(Long id, String passengerNo, String passengerName, Long flightId, String seatNo, BigDecimal cost) {
+    public TicketEntity(Long id, String passengerNo, String passengerName, FlightEntity flightEntity, String seatNo, BigDecimal cost) {
         this.id = id;
         this.passengerNo = passengerNo;
         this.passengerName = passengerName;
-        this.flightId = flightId;
+        this.flightEntity = flightEntity;
         this.seatNo = seatNo;
         this.cost = cost;
     }
@@ -47,12 +47,12 @@ public class TicketEntity {
         this.passengerName = passengerName;
     }
 
-    public Long getFlightId() {
-        return flightId;
+    public FlightEntity getFlightEntity() {
+        return flightEntity;
     }
 
-    public void setFlightId(Long flightId) {
-        this.flightId = flightId;
+    public void setFlightEntity(FlightEntity flightEntity) {
+        this.flightEntity = flightEntity;
     }
 
     public String getSeatNo() {
@@ -77,7 +77,7 @@ public class TicketEntity {
                "id=" + id +
                ", passengerNo='" + passengerNo + '\'' +
                ", passengerName='" + passengerName + '\'' +
-               ", flightId=" + flightId +
+               ", flightEntity=" + flightEntity +
                ", seatNo='" + seatNo + '\'' +
                ", cost=" + cost +
                '}';
